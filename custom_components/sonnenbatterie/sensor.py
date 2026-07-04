@@ -119,7 +119,13 @@ class SonnenBatterieSensor(CoordinatorEntity):
 
         if endpoint in data:
             endpoint_data = data[endpoint]
-            if isinstance(endpoint_data, dict) and self._key in endpoint_data:
+            
+            # Handle nested keys with dot notation
+            if "." in self._key:
+                value = self._get_nested_value(endpoint_data, self._key)
+                if value is not None:
+                    return round(value, 2) if isinstance(value, (int, float)) else value
+            elif isinstance(endpoint_data, dict) and self._key in endpoint_data:
                 value = endpoint_data[self._key]
                 return round(value, 2) if isinstance(value, (int, float)) else value
 
@@ -134,6 +140,25 @@ class SonnenBatterieSensor(CoordinatorEntity):
                         return round(value, 2) if isinstance(value, (int, float)) else value
 
         return None
+
+    def _get_nested_value(self, data, key_path):
+        """Navigate nested dictionary using dot notation, handling quoted keys."""
+        parts = key_path.split(".")
+        current = data
+        
+        for part in parts:
+            if not isinstance(current, dict):
+                return None
+            
+            # Remove quotes from part if present
+            part = part.strip("'\"")
+            
+            if part in current:
+                current = current[part]
+            else:
+                return None
+        
+        return current
 
     @property
     def extra_state_attributes(self):

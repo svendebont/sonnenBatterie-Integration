@@ -11,6 +11,7 @@ SENSORS = [
     {"name": "Grid Feed-In", "key": "GridFeedIn_W", "unit": "W", "device_class": "power", "state_class": "measurement"},
     {"name": "Battery State of Charge", "key": "USOC", "unit": "%", "device_class": "battery", "state_class": "measurement"},
     {"name": "AC Power", "key": "Pac_total_W", "unit": "W", "device_class": "power", "state_class": "measurement"},
+    {"name": "Eclipse Status", "key": "ic_status.'Eclipse Led'.'Eclipse Status'", "unit": None, "device_class": None},
 
     # Sensors from /api/v2/status
     {"name": "Apparent Output", "key": "Apparent_output", "unit": "VA", "device_class": None},
