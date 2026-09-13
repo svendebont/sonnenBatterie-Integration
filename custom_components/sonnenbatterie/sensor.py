@@ -1,6 +1,6 @@
 # File: custom_components/sonnenbatterie/sensor.py
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, CoordinatorEntity
@@ -99,6 +99,7 @@ class SonnenBatterieSensor(CoordinatorEntity):
         self._device_class = sensor["device_class"]
         self._state_class = sensor.get("state_class")
         self._sensor_direction = sensor.get("direction")
+        self._derived = sensor.get("derived")
 
         self._attr_has_entity_name = True
         self._attr_device_info = {
@@ -114,6 +115,10 @@ class SonnenBatterieSensor(CoordinatorEntity):
 
     @property
     def state(self):
+        # Handle derived datetime sensors
+        if self._derived:
+            return self._calculate_derived_value()
+
         data = self.coordinator.data_cache
         endpoint = self.determine_endpoint()
 
@@ -139,6 +144,37 @@ class SonnenBatterieSensor(CoordinatorEntity):
                         value = entry[self._key]
                         return round(value, 2) if isinstance(value, (int, float)) else value
 
+        return None
+
+    def _calculate_derived_value(self):
+        """Calculate derived datetime values from raw sensor data."""
+        data = self.coordinator.data_cache
+        endpoint = "/api/v2/latestdata"
+        
+        if endpoint not in data:
+            return None
+        
+        endpoint_data = data[endpoint]
+        now = datetime.now()
+        
+        # Last Full Charge: now - secondssincefullcharge
+        if self._derived == "last_full_charge":
+            seconds_since = self._get_nested_value(endpoint_data, "ic_status.secondssincefullcharge")
+            if seconds_since is not None and isinstance(seconds_since, (int, float)):
+                last_charge = now - timedelta(seconds=seconds_since)
+                return last_charge.isoformat()
+        
+        # Next Full Charge: now + (nextfullchargestarttime - secondssincefullcharge)
+        elif self._derived == "next_full_charge":
+            next_charge_start = self._get_nested_value(endpoint_data, "ic_status.nextfullchargestarttime")
+            seconds_since = self._get_nested_value(endpoint_data, "ic_status.secondssincefullcharge")
+            
+            if next_charge_start is not None and seconds_since is not None:
+                if isinstance(next_charge_start, (int, float)) and isinstance(seconds_since, (int, float)):
+                    seconds_until = next_charge_start - seconds_since
+                    next_charge = now + timedelta(seconds=seconds_until)
+                    return next_charge.isoformat()
+        
         return None
 
     def _get_nested_value(self, data, key_path):
@@ -184,7 +220,8 @@ class SonnenBatterieSensor(CoordinatorEntity):
     @property
     def unique_id(self):
         direction_suffix = f"_{self._sensor_direction}" if self._sensor_direction else ""
-        return f"{self._name}_{self.coordinator.ip}-{self._key}{direction_suffix}"
+        derived_suffix = f"_{self._derived}" if self._derived else ""
+        return f"{self._name}_{self.coordinator.ip}-{self._key}{direction_suffix}{derived_suffix}"
 
     def determine_endpoint(self):
         if self._key in [
