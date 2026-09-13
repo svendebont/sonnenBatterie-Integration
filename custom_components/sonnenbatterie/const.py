@@ -12,6 +12,8 @@ SENSORS = [
     {"name": "Battery State of Charge", "key": "USOC", "unit": "%", "device_class": "battery", "state_class": "measurement"},
     {"name": "AC Power", "key": "Pac_total_W", "unit": "W", "device_class": "power", "state_class": "measurement"},
     {"name": "Eclipse Status", "key": "ic_status.'Eclipse Led'.'Eclipse Status'", "unit": None, "device_class": None},
+    {"name": "Seconds Since Full Charge", "key": "ic_status.secondssincefullcharge.", "unit": None, "device_class": None},
+    {"name": "Next Full Charge Start Time", "key": "ic_status.nextfullchargestarttime", "unit": None, "device_class": None},
 
     # Sensors from /api/v2/status
     {"name": "Apparent Output", "key": "Apparent_output", "unit": "VA", "device_class": None},
