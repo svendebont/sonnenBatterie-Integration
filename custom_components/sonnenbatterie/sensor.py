@@ -162,6 +162,8 @@ class SonnenBatterieSensor(CoordinatorEntity):
             seconds_since = self._get_nested_value(endpoint_data, "ic_status.secondssincefullcharge")
             if seconds_since is not None and isinstance(seconds_since, (int, float)):
                 last_charge = now - timedelta(seconds=seconds_since)
+                # Round to nearest minute to avoid unnecessary updates
+                last_charge = last_charge.replace(second=0, microsecond=0)
                 return last_charge.isoformat()
         
         # Next Full Charge: now + (nextfullchargestarttime - secondssincefullcharge)
@@ -173,6 +175,8 @@ class SonnenBatterieSensor(CoordinatorEntity):
                 if isinstance(next_charge_start, (int, float)) and isinstance(seconds_since, (int, float)):
                     seconds_until = next_charge_start - seconds_since
                     next_charge = now + timedelta(seconds=seconds_until)
+                    # Round to nearest minute to avoid unnecessary updates
+                    next_charge = next_charge.replace(second=0, microsecond=0)
                     return next_charge.isoformat()
         
         return None
